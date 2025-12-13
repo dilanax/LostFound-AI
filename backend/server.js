@@ -7,15 +7,18 @@ import dotenv from "dotenv";
 import lostRoutes from "./routes/lostRoutes.js";
 import foundRoutes from "./routes/foundRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
-
+import path from "path";
+import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
-
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Test route
 app.get("/", (req, res) => {
   res.send("Lost & Found API running");

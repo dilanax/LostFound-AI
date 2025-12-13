@@ -5,34 +5,41 @@ import { Search, Package, Sparkles } from "lucide-react";
 import { API_URL } from "../api";
 import ItemCard from "../components/ItemCard.jsx";
 
-export default function Home() {
+/* eslint-disable react/prop-types */
+export default function Home({ refreshKey = 0 }) {
+
+    useEffect(() => {
+    fetchItems();
+  }, [refreshKey]);
+  
   const [lostItems, setLostItems] = useState([]);
   const [foundItems, setFoundItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [matchResult, setMatchResult] = useState(null);
   const [matchLoading, setMatchLoading] = useState(false);
 
-  // ✅ FETCH REAL DATA FROM BACKEND
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      const [lostRes, foundRes] = await Promise.all([
+        axios.get(`${API_URL}/api/lost`),
+        axios.get(`${API_URL}/api/found`),
+      ]);
+
+      setLostItems(lostRes.data || []);
+      setFoundItems(foundRes.data || []);
+    } catch (err) {
+      console.error("Error fetching items:", err);
+      alert("Error fetching items from server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ re-fetch whenever refreshKey changes
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const [lostRes, foundRes] = await Promise.all([
-          axios.get(`${API_URL}/api/lost`),
-          axios.get(`${API_URL}/api/found`),
-        ]);
-
-        setLostItems(lostRes.data || []);
-        setFoundItems(foundRes.data || []);
-      } catch (err) {
-        console.error("Error fetching items:", err);
-        alert("Error fetching items from server");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchItems();
-  }, []);
+  }, [refreshKey]);
 
   const handleFindMatches = async (lostId) => {
     setMatchLoading(true);
@@ -71,23 +78,18 @@ export default function Home() {
             </h1>
 
             <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-              Report items you&apos;ve lost or found, and let our smart system
-              help match them. Join students reuniting with their belongings.
+              Report items you&apos;ve lost or found, and let our smart system help match them.
             </p>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-4 text-center">
-              <div className="text-3xl font-bold text-emerald-400 mb-1">
-                {lostItems.length}
-              </div>
+              <div className="text-3xl font-bold text-emerald-400 mb-1">{lostItems.length}</div>
               <div className="text-xs text-slate-400">Lost Items</div>
             </div>
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-4 text-center">
-              <div className="text-3xl font-bold text-blue-400 mb-1">
-                {foundItems.length}
-              </div>
+              <div className="text-3xl font-bold text-blue-400 mb-1">{foundItems.length}</div>
               <div className="text-xs text-slate-400">Found Items</div>
             </div>
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-4 text-center">
@@ -95,9 +97,7 @@ export default function Home() {
               <div className="text-xs text-slate-400">Matches Made</div>
             </div>
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-4 text-center">
-              <div className="text-3xl font-bold text-amber-400 mb-1">
-                100%
-              </div>
+              <div className="text-3xl font-bold text-amber-400 mb-1">100%</div>
               <div className="text-xs text-slate-400">Free to Use</div>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Lost Items Column */}
+            {/* Lost Items */}
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -121,12 +121,8 @@ export default function Home() {
                     <Search className="w-5 h-5 text-red-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">
-                      Lost Items
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Help find these items
-                    </p>
+                    <h3 className="text-xl font-bold text-white">Lost Items</h3>
+                    <p className="text-xs text-slate-500">Help find these items</p>
                   </div>
                 </div>
                 <span className="bg-red-500/10 text-red-400 text-xs font-semibold px-3 py-1 rounded-full">
@@ -138,9 +134,6 @@ export default function Home() {
                 <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
                   <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-500">No lost items yet</p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Be the first to report
-                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -150,16 +143,14 @@ export default function Home() {
                       item={item}
                       type="lost"
                       onMatchClick={handleFindMatches}
-                      highlight={
-                        matchResult && matchResult.lost?._id === item._id
-                      }
+                      highlight={matchResult && matchResult.lost?._id === item._id}
                     />
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Found Items Column */}
+            {/* Found Items */}
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -167,12 +158,8 @@ export default function Home() {
                     <Package className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">
-                      Found Items
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Waiting to be claimed
-                    </p>
+                    <h3 className="text-xl font-bold text-white">Found Items</h3>
+                    <p className="text-xs text-slate-500">Waiting to be claimed</p>
                   </div>
                 </div>
                 <span className="bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1 rounded-full">
@@ -184,9 +171,6 @@ export default function Home() {
                 <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
                   <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-500">No found items yet</p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Help someone today
-                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -198,9 +182,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {/* Match Results (same as your design, using matchResult) */}
-        {/* ...keep your existing Match Suggestions block here, it will work with real data now ... */}
       </div>
     </div>
   );

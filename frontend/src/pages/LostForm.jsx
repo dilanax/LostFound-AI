@@ -10,27 +10,55 @@ export default function LostForm({ goHome }) {
     category: "",
     lastSeenLocation: "",
     description: "",
-    imageUrl: "",
   });
+
+  const [imageFile, setImageFile] = useState(null);
+  const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    setImageFile(file || null);
+
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+    } else {
+      setPreview("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      await axios.post(`${API_URL}/api/lost`, form);
+      const data = new FormData();
+      data.append("title", form.title);
+      data.append("category", form.category);
+      data.append("lastSeenLocation", form.lastSeenLocation);
+      data.append("description", form.description);
+
+      // field name MUST match backend: upload.single("image")
+      if (imageFile) data.append("image", imageFile);
+
+      await axios.post(`${API_URL}/api/lost`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       alert("Lost item reported successfully!");
       setForm({
         title: "",
         category: "",
         lastSeenLocation: "",
         description: "",
-        imageUrl: "",
       });
+      setImageFile(null);
+      setPreview("");
       goHome?.();
     } catch (err) {
       console.error(err);
@@ -44,7 +72,7 @@ export default function LostForm({ goHome }) {
     <section>
       <h2 className="text-2xl font-semibold mb-1">Report a Lost Item</h2>
       <p className="text-sm text-slate-400 mb-6">
-        Add as many details as possible so people can help find it.
+        Add details and upload a real image (from your phone/PC).
       </p>
 
       <form
@@ -85,17 +113,26 @@ export default function LostForm({ goHome }) {
           />
         </div>
 
+        {/* ✅ REAL IMAGE UPLOAD */}
         <div>
-          <label className="block text-sm mb-1">Image URL (optional)</label>
+          <label className="block text-sm mb-1">Upload Image</label>
           <input
-            name="imageUrl"
-            value={form.imageUrl}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-950 hover:file:bg-emerald-400"
           />
+
+          {preview && (
+            <img
+              src={preview}
+              alt="Preview"
+              className="mt-3 w-full h-48 object-cover rounded-xl border border-slate-800"
+            />
+          )}
+
           <p className="text-xs text-slate-500 mt-1">
-            Later we can add real file upload (Cloudinary).
+            Max 5MB. (We are saving locally now; later we can use Cloudinary)
           </p>
         </div>
 
@@ -106,7 +143,7 @@ export default function LostForm({ goHome }) {
             value={form.description}
             onChange={handleChange}
             rows={4}
-            placeholder="Details like color, brand, unique marks, contents..."
+            placeholder="Details like color, brand, unique marks..."
             className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/70"
           />
         </div>
@@ -119,6 +156,7 @@ export default function LostForm({ goHome }) {
           >
             {loading ? "Submitting..." : "Submit Lost Report"}
           </button>
+
           <button
             type="button"
             onClick={goHome}

@@ -1,5 +1,7 @@
 // src/components/ItemCard.jsx
 /* eslint-disable react/prop-types */
+import { API_URL } from "../api";
+
 export default function ItemCard({
   item,
   type,
@@ -7,6 +9,10 @@ export default function ItemCard({
   highlight = false,
 }) {
   const isLost = type === "lost";
+
+  // ✅ correct image url for backend uploads like "/uploads/xxx.jpg"
+  const imageSrc = item.imageUrl ? `${API_URL}${item.imageUrl}` : null;
+
   return (
     <div
       className={`rounded-xl border p-4 bg-slate-900/70 border-slate-800 shadow-sm ${
@@ -19,20 +25,25 @@ export default function ItemCard({
             {item.title || "Untitled item"}
           </h3>
           <p className="text-xs uppercase tracking-wide text-slate-400">
-            {item.category || "uncategorized"} •{" "}
-            {isLost ? "Lost" : "Found"} item
+            {item.category || "uncategorized"} • {isLost ? "Lost" : "Found"} item
           </p>
         </div>
+
         <span className="text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-300">
-          {new Date(item.createdAt).toLocaleDateString()}
+          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
         </span>
       </div>
 
-      {item.imageUrl && (
+      {/* ✅ show image if exists */}
+      {imageSrc && (
         <img
-          src={item.imageUrl}
-          alt={item.title}
+          src={imageSrc}
+          alt={item.title || "item"}
           className="mt-3 h-40 w-full object-cover rounded-lg border border-slate-800/80"
+          onError={(e) => {
+            // if image fails, hide it
+            e.currentTarget.style.display = "none";
+          }}
         />
       )}
 
